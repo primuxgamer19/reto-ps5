@@ -1,0 +1,343 @@
+import datetime
+import json
+import os
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.textinput import TextInput
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.image import Image
+from kivy.core.window import Window
+from kivy.core.audio import SoundLoader
+from kivy.clock import Clock
+
+# --- MOTOR DE AUDIO OPTIMIZADO ---
+class AudioManager:
+    def __init__(self):
+        self.bg_music = None
+        self.music_13 = None
+        self.is_playing_13 = False
+        self.cache = {}
+
+    def play_fx(self, file_name):
+        if file_name not in self.cache:
+            self.cache[file_name] = SoundLoader.load(file_name)
+        
+        sound = self.cache[file_name]
+        if sound:
+            sound.stop()
+            sound.play()
+
+    def play_bg(self, file_name):
+        if not self.bg_music:
+            self.bg_music = SoundLoader.load(file_name)
+        if self.bg_music and self.bg_music.state == 'stop':
+            self.bg_music.loop = True
+            self.bg_music.volume = 0.3
+            self.bg_music.play()
+
+    def stop_bg(self):
+        if self.bg_music: self.bg_music.stop()
+
+    def stop_13(self):
+        self.is_playing_13 = False
+        if self.music_13: self.music_13.stop()
+
+    # NUEVO: Método para pre-cargar la música pesada del Easter Egg
+    def load_13_music(self, file_name):
+        if not self.music_13:
+            self.music_13 = SoundLoader.load(file_name)
+
+# --- COMPONENTE DE UI PERSONALIZADO ---
+class PresupuestoRow(BoxLayout):
+    def __init__(self, nombre, precio, on_delete, **kwargs):
+        super().__init__(orientation='horizontal', size_hint_y=None, height=60, spacing=5, **kwargs)
+        self.txt_nombre = TextInput(text=nombre, multiline=False)
+        self.txt_precio = TextInput(text=str(precio), multiline=False, input_filter='float')
+        btn_del = Button(text="X", size_hint_x=None, width=40, background_color=(1, 0, 0, 1))
+        btn_del.bind(on_press=on_delete)
+        
+        self.add_widget(self.txt_nombre)
+        self.add_widget(self.txt_precio)
+        self.add_widget(btn_del)
+
+    def get_data(self):
+        try: p = float(self.txt_precio.text)
+        except: p = 0.0
+        return {'nombre': self.txt_nombre.text, 'precio': p}
+
+# --- PANTALLAS ---
+
+class PortadaScreen(Screen):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        layout = BoxLayout(orientation='vertical', padding=20)
+        self.img = Image(source='portada_img.png') 
+        layout.add_widget(self.img)
+        layout.add_widget(Label(text="Cargando calculadora del Reto...", size_hint_y=None, height=50))
+        self.add_widget(layout)
+
+    def on_enter(self):
+        # Pre-cargamos los sonidos pesados mientras el usuario ve la portada
+        app = App.get_running_app()
+        app.audio.load_13_music('Letanía13.mp3')
+        Clock.schedule_once(self.ir_a_calculadora, 3)
+
+    def ir_a_calculadora(self, dt):
+        App.get_running_app().audio.play_bg('Playstation 5 voy por ti.mp3')
+        self.manager.current = 'calculadora'
+
+class CalculadoraScreen(Screen):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        app = App.get_running_app()
+        self.layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        
+        self.layout.add_widget(Label(text="--- CALCULADORA DEL RETO PS5 1.0 ---", font_size='20sp', color=(1, 0, 0, 1)))
+        self.layout.add_widget(Label(text="¿Cuanto tienes ahorrado? ($)"))
+        
+        self.money_input = TextInput(text=app.ahorrado_guardado, multiline=False, input_filter='float', size_hint_y=None, height=100)
+        self.layout.add_widget(self.money_input)
+
+        btn_calc = Button(text='CALCULAR REPORTE', background_color=(0, 1, 0, 1), size_hint_y=None, height=100)
+        btn_calc.bind(on_press=self.actualizar_reporte)
+        self.layout.add_widget(btn_calc)
+
+        btn_meta = Button(text="EDITAR PRESUPUESTO", background_color=(0.2, 0.6, 1, 1), size_hint_y=None, height=80)
+        btn_meta.bind(on_press=lambda x: setattr(self.manager, 'current', 'presupuesto'))
+        self.layout.add_widget(btn_meta)
+
+        self.res_meta = Label(text="Meta Total: $---", font_size='16sp')
+        self.res_tiempo = Label(text="Tiempo: ---", color=(0, 0.8, 1, 1))
+        self.res_falta = Label(text="Te falta: $---", color=(1, 0.5, 0, 1))
+        self.res_cuota = Label(text="Cuota mensual: $---")
+        self.res_estado = Label(text="Estado: Esperando datos...", italic=True, halign="center")
+        
+        for widget in [self.res_meta, self.res_tiempo, self.res_falta, self.res_cuota, self.res_estado]:
+            self.layout.add_widget(widget)
+
+        self.add_widget(self.layout)
+
+    def on_pre_enter(self):
+        app = App.get_running_app()
+        meta = sum(p['precio'] for p in app.productos)
+        self.res_meta.text = f"Meta Total: ${meta:.2f}"
+
+    def actualizar_reporte(self, instance):
+        app = App.get_running_app()
+        try:
+            ahorrado = float(self.money_input.text or 0)
+            app.ahorrado_guardado = str(ahorrado)
+            app.save_data()
+            
+            meta = sum(p['precio'] for p in app.productos)
+            if meta <= 0:
+                self.res_estado.text = "¡Presupuesto vacio!\nAñade algo."
+                app.audio.play_fx('erro.mp3')
+                return
+
+            try:
+                fecha_limite = datetime.datetime.strptime(app.fecha_limite, "%Y-%m-%d").date()
+            except:
+                fecha_limite = datetime.date.today() + datetime.timedelta(days=30)
+                
+            hoy = datetime.date.today()
+            delta = fecha_limite - hoy
+            total_dias = max(1, delta.days)
+            meses_aprox = max(1, total_dias // 30)
+            
+            falta = meta - ahorrado
+            cuota = falta / meses_aprox
+            porcentaje = (ahorrado / meta) * 100
+
+            self.res_tiempo.text = f"Faltan: {meses_aprox} meses ({total_dias} dias)"
+            self.res_falta.text = f"Te faltan: ${falta:.2f}"
+            self.res_cuota.text = f"Cuota mensual: ${cuota:.2f}"
+
+            if ahorrado == 13:
+                self.res_estado.text = "entre más me la mamas\nmás me crece"
+                app.trigger_13_logic()
+                return
+
+            app.audio.stop_13()
+            app.audio.play_bg('Playstation 5 voy por ti.mp3')
+
+            msg, sound = self.obtener_feedback(ahorrado, meta, total_dias, porcentaje, cuota)
+            self.res_estado.text = msg
+            if sound: app.audio.play_fx(sound)
+                
+        except ValueError:
+            self.res_estado.text = "¡Pon un numero valido! xD"
+            app.audio.play_fx('erro.mp3')
+
+    def obtener_feedback(self, ahorrado, meta, dias, porcentaje, cuota):
+        if ahorrado > 10000: return "¡Ni tu te lo crees! XD\n¿Robaste un banco o que?", 'PUM(MP3_320K).mp3'
+        if ahorrado == 666: return "¿$666? ¡El diablo Bro o_O!", 'PUM(MP3_320K).mp3'
+        if ahorrado == 777: return "¿$777? ¡Hey muy buenas a todos, Guapisimos!\nB-)", 'acierto.mp3'
+        if 0 < ahorrado < 0.0001: return "POBREZA MOLECULAR DETECTADA.\n¡No trolees y busca camello! xd", 'PUM(MP3_320K).mp3'
+        if ahorrado == 67: return "ni se te ocurra decirlo... -_-", '!.wav'
+        if ahorrado >= meta: return "¡LO LOGRASTE! B-)\nLa PS5 es tuya. ¡A viciar!", 'Alelulla.wav'
+        if ahorrado < 0.01: return f"NIVEL: VACIO TOTAL x_x\nCon ${ahorrado} no tienes\nni para pagar aire. ¡MUEVETE VAGO!", 'PUM(MP3_320K).mp3'
+        if ahorrado < 0.05: return f"NIVEL: MISERIA -_-\n¿{ahorrado} centavos? no te alcanza\nni para un chicle T_T.", 'PUM(MP3_320K).mp3'
+        if ahorrado < 0.50: return f"NIVEL: HAMBRE T_T\nCon ${ahorrado} no te compras\nni una empanada de aire.", 'PUM(MP3_320K).mp3'
+        if ahorrado <= 1.99: return f"NIVEL: LIMPIO (._.)\nCon ${ahorrado:.2f} no te alcanza\nni pal encebollado.", 'PUM(MP3_320K).mp3'
+        
+        if dias < 235 and porcentaje < 10: return "OJO: Ya el tiempo vuela y estas limpio O_o\ndel 10%. La maquina de afeitar\nesta calentando... T_T", 'PUM(MP3_320K).mp3'
+        if dias < 60 and porcentaje < 50: return "ESTADO: CALVEZ INMINENTE.\n¡No llegas ni palo!\nLa [PIÑA] ya esta en camino. <*>", 'PUM(MP3_320K).mp3'
+        if cuota > 300: return f"Cuota de ${cuota:.2f}?\nNi que fueras Mr. Beast.\n¡Dile adios al pelo! (PELADO)", 'PUM(MP3_320K).mp3'
+        if porcentaje < 30: return f"PELIGRO MAXIMO [{porcentaje:.1f}%]. [PIZZA CON PIÑA]\nLa pizza ya se esta horneando D:", 'PUM(MP3_320K).mp3'
+        if porcentaje < 70: return f"A MEDIA LLAVE [{porcentaje:.1f}%]. (o_o)\n¡Dale que falta camello! T_T", '!.wav'
+        
+        return f"¡CASI AHI! [{porcentaje:.1f}%] --->\nYa huelo el plastico nuevo :D", 'acierto.mp3'
+
+class PresupuestoScreen(Screen):
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.rows = []
+        self.main_layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        self.main_layout.add_widget(Label(text="--- CONFIGURAR PRESUPUESTO ---", size_hint_y=None, height=40))
+        
+        self.scroll = ScrollView()
+        self.lista_ui = BoxLayout(orientation='vertical', size_hint_y=None, spacing=10)
+        self.lista_ui.bind(minimum_height=self.lista_ui.setter('height'))
+        
+        self.fecha_box = BoxLayout(orientation='vertical', size_hint_y=None, height=100, spacing=5)
+        self.fecha_box.add_widget(Label(text="META (AAAA-MM-DD):", size_hint_y=None, height=30))
+        self.date_input = TextInput(
+            multiline=False, size_hint_y=None, height=60, font_size='18sp',
+            hint_text="YYYY-MM-DD", hint_text_color=(0.5, 0.5, 0.5, 1)
+        )
+        self.date_input.bind(text=self.auto_format_date)
+        self.fecha_box.add_widget(self.date_input)
+        
+        self.scroll.add_widget(self.lista_ui)
+        self.main_layout.add_widget(self.scroll)
+
+        botones = BoxLayout(size_hint_y=None, height=80, spacing=10)
+        btn_add = Button(text="AÑADIR", background_color=(0, 0.7, 0, 1))
+        btn_add.bind(on_press=self.añadir_item_vacio)
+        btn_ok = Button(text="ACEPTAR", background_color=(0, 0.5, 1, 1))
+        btn_ok.bind(on_press=self.guardar_y_volver)
+        botones.add_widget(btn_add)
+        botones.add_widget(btn_ok)
+        self.main_layout.add_widget(botones)
+        
+        self.add_widget(self.main_layout)
+
+    def auto_format_date(self, instance, value):
+        clean_text = "".join([c for c in value if c.isdigit()])
+        new_text = ""
+        if len(clean_text) > 0:
+            new_text = clean_text[:4]
+            if len(clean_text) > 4:
+                new_text += "-" + clean_text[4:6]
+                if len(clean_text) > 6:
+                    new_text += "-" + clean_text[6:8]
+        if value != new_text:
+            instance.text = new_text
+            instance.cursor = (len(new_text), 0)
+
+    def on_enter(self):
+        app = App.get_running_app()
+        self.date_input.text = app.fecha_limite
+        self.refrescar_lista()
+
+    def refrescar_lista(self):
+        self.lista_ui.clear_widgets()
+        self.rows = []
+        app = App.get_running_app()
+        for prod in app.productos:
+            self.crear_fila(prod['nombre'], prod['precio'])
+        self.lista_ui.add_widget(self.fecha_box)
+
+    def crear_fila(self, nombre, precio):
+        row = PresupuestoRow(nombre, precio, on_delete=lambda x: self.eliminar_fila(row))
+        self.rows.append(row)
+        self.lista_ui.add_widget(row)
+
+    def añadir_item_vacio(self, instance):
+        self.lista_ui.remove_widget(self.fecha_box)
+        self.crear_fila("Nuevo", 0.0)
+        self.lista_ui.add_widget(self.fecha_box)
+
+    def eliminar_fila(self, row_obj):
+        if row_obj in self.rows:
+            self.rows.remove(row_obj)
+            self.lista_ui.remove_widget(row_obj)
+
+    def guardar_y_volver(self, instance):
+        app = App.get_running_app()
+        app.productos = [r.get_data() for r in self.rows]
+        app.fecha_limite = self.date_input.text
+        app.save_data()
+        self.manager.current = 'calculadora'
+
+class RetoPS5App(App):
+    def build(self):
+        Window.softinput_mode = "pan"
+        Window.clearcolor = (0.1, 0.1, 0.1, 1)
+        self.audio = AudioManager()
+        self.data_file = "ahorro_data.json"
+        self.load_data()
+        
+        sm = ScreenManager()
+        sm.add_widget(PortadaScreen(name='portada'))
+        sm.add_widget(CalculadoraScreen(name='calculadora'))
+        sm.add_widget(PresupuestoScreen(name='presupuesto'))
+        return sm
+
+    def trigger_13_logic(self):
+        if self.audio.is_playing_13: return
+        self.audio.is_playing_13 = True
+        
+        # Primero detenemos la música de fondo y lanzamos el FX
+        self.audio.stop_bg()
+        self.audio.play_fx('PUM(MP3_320K).mp3')
+        
+        # IMPORTANTE: Ya no cargamos el archivo aquí, solo lo reproducimos
+        # El retraso de 0.8s da tiempo a que el 'PUM' termine su impacto inicial
+        Clock.schedule_once(self.play_letania, 0.8)
+
+    def play_letania(self, dt):
+        # Si por alguna razón no se cargó en la portada, se carga ahora (pero solo una vez)
+        if not self.audio.music_13:
+            self.audio.load_13_music('Letanía13.mp3')
+        
+        if self.audio.music_13:
+            self.audio.music_13.bind(on_stop=lambda instance: setattr(self.audio, 'is_playing_13', False))
+            self.audio.music_13.play()
+
+    def load_data(self):
+        if os.path.exists(self.data_file):
+            try:
+                with open(self.data_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.productos = data.get('productos', [])
+                    self.ahorrado_guardado = data.get('ahorrado', "")
+                    self.fecha_limite = data.get('fecha_limite', "2026-11-19")
+            except: self.set_defaults()
+        else: self.set_defaults()
+
+    def set_defaults(self):
+        self.productos = [
+            {'nombre': 'PS5 Slim', 'precio': 550.0},
+            {'nombre': 'Regulador', 'precio': 60.0},
+            {'nombre': 'Monitor 1080p', 'precio': 280.0},
+            {'nombre': 'GTA 6', 'precio': 150.0}
+        ]
+        self.ahorrado_guardado = ""
+        self.fecha_limite = "2026-11-19"
+
+    def save_data(self):
+        data = {'productos': self.productos, 'ahorrado': self.ahorrado_guardado, 'fecha_limite': self.fecha_limite}
+        with open(self.data_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+
+    def on_stop(self):
+        self.save_data()
+
+if __name__ == '__main__':
+    RetoPS5App().run()
+      
