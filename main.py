@@ -82,11 +82,11 @@ class PortadaScreen(Screen):
     def on_enter(self):
         # Pre-cargamos los sonidos pesados mientras el usuario ve la portada
         app = App.get_running_app()
-        app.audio.load_13_music('Letanía13.mp3')
+        app.audio.load_13_music('letania13.mp3')
         Clock.schedule_once(self.ir_a_calculadora, 3)
 
     def ir_a_calculadora(self, dt):
-        App.get_running_app().audio.play_bg('Playstation 5 voy por ti.mp3')
+        App.get_running_app().audio.play_bg('ps5.mp3')
         self.manager.current = 'calculadora'
 
 class CalculadoraScreen(Screen):
@@ -162,7 +162,7 @@ class CalculadoraScreen(Screen):
                 return
 
             app.audio.stop_13()
-            app.audio.play_bg('Playstation 5 voy por ti.mp3')
+            app.audio.play_bg('ps5.mp3')
 
             msg, sound = self.obtener_feedback(ahorrado, meta, total_dias, porcentaje, cuota)
             self.res_estado.text = msg
@@ -173,22 +173,22 @@ class CalculadoraScreen(Screen):
             app.audio.play_fx('erro.mp3')
 
     def obtener_feedback(self, ahorrado, meta, dias, porcentaje, cuota):
-        if ahorrado > 10000: return "¡Ni tu te lo crees! XD\n¿Robaste un banco o que?", 'PUM(MP3_320K).mp3'
-        if ahorrado == 666: return "¿$666? ¡El diablo Bro o_O!", 'PUM(MP3_320K).mp3'
+        if ahorrado > 10000: return "¡Ni tu te lo crees! XD\n¿Robaste un banco o que?", 'pum.mp3'
+        if ahorrado == 666: return "¿$666? ¡El diablo Bro o_O!", 'pum.mp3'
         if ahorrado == 777: return "¿$777? ¡Hey muy buenas a todos, Guapisimos!\nB-)", 'acierto.mp3'
-        if 0 < ahorrado < 0.0001: return "POBREZA MOLECULAR DETECTADA.\n¡No trolees y busca camello! xd", 'PUM(MP3_320K).mp3'
-        if ahorrado == 67: return "ni se te ocurra decirlo... -_-", '!.wav'
+        if 0 < ahorrado < 0.0001: return "POBREZA MOLECULAR DETECTADA.\n¡No trolees y busca camello! xd", 'pum.mp3'
+        if ahorrado == 67: return "ni se te ocurra decirlo... -_-", 'alerta.wav'
         if ahorrado >= meta: return "¡LO LOGRASTE! B-)\nLa PS5 es tuya. ¡A viciar!", 'Alelulla.wav'
-        if ahorrado < 0.01: return f"NIVEL: VACIO TOTAL x_x\nCon ${ahorrado} no tienes\nni para pagar aire. ¡MUEVETE VAGO!", 'PUM(MP3_320K).mp3'
-        if ahorrado < 0.05: return f"NIVEL: MISERIA -_-\n¿{ahorrado} centavos? no te alcanza\nni para un chicle T_T.", 'PUM(MP3_320K).mp3'
-        if ahorrado < 0.50: return f"NIVEL: HAMBRE T_T\nCon ${ahorrado} no te compras\nni una empanada de aire.", 'PUM(MP3_320K).mp3'
-        if ahorrado <= 1.99: return f"NIVEL: LIMPIO (._.)\nCon ${ahorrado:.2f} no te alcanza\nni pal encebollado.", 'PUM(MP3_320K).mp3'
+        if ahorrado < 0.01: return f"NIVEL: VACIO TOTAL x_x\nCon ${ahorrado} no tienes\nni para pagar aire. ¡MUEVETE VAGO!", 'pum.mp3'
+        if ahorrado < 0.05: return f"NIVEL: MISERIA -_-\n¿{ahorrado} centavos? no te alcanza\nni para un chicle T_T.", 'pum.mp3'
+        if ahorrado < 0.50: return f"NIVEL: HAMBRE T_T\nCon ${ahorrado} no te compras\nni una empanada de aire.", 'pum.mp3'
+        if ahorrado <= 1.99: return f"NIVEL: LIMPIO (._.)\nCon ${ahorrado:.2f} no te alcanza\nni pal encebollado.", 'pum.mp3'
         
-        if dias < 235 and porcentaje < 10: return "OJO: Ya el tiempo vuela y estas limpio O_o\ndel 10%. La maquina de afeitar\nesta calentando... T_T", 'PUM(MP3_320K).mp3'
-        if dias < 60 and porcentaje < 50: return "ESTADO: CALVEZ INMINENTE.\n¡No llegas ni palo!\nLa [PIÑA] ya esta en camino. <*>", 'PUM(MP3_320K).mp3'
-        if cuota > 300: return f"Cuota de ${cuota:.2f}?\nNi que fueras Mr. Beast.\n¡Dile adios al pelo! (PELADO)", 'PUM(MP3_320K).mp3'
-        if porcentaje < 30: return f"PELIGRO MAXIMO [{porcentaje:.1f}%]. [PIZZA CON PIÑA]\nLa pizza ya se esta horneando D:", 'PUM(MP3_320K).mp3'
-        if porcentaje < 70: return f"A MEDIA LLAVE [{porcentaje:.1f}%]. (o_o)\n¡Dale que falta camello! T_T", '!.wav'
+        if dias < 235 and porcentaje < 10: return "OJO: Ya el tiempo vuela y estas limpio O_o\ndel 10%. La maquina de afeitar\nesta calentando... T_T", 'pum.mp3'
+        if dias < 60 and porcentaje < 50: return "ESTADO: CALVEZ INMINENTE.\n¡No llegas ni palo!\nLa [PIÑA] ya esta en camino. <*>", 'pum.mp3'
+        if cuota > 300: return f"Cuota de ${cuota:.2f}?\nNi que fueras Mr. Beast.\n¡Dile adios al pelo! (PELADO)", 'pum.mp3'
+        if porcentaje < 30: return f"PELIGRO MAXIMO [{porcentaje:.1f}%]. [PIZZA CON PIÑA]\nLa pizza ya se esta horneando D:", 'pum.mp3'
+        if porcentaje < 70: return f"A MEDIA LLAVE [{porcentaje:.1f}%]. (o_o)\n¡Dale que falta camello! T_T", 'alerta.wav'
         
         return f"¡CASI AHI! [{porcentaje:.1f}%] --->\nYa huelo el plastico nuevo :D", 'acierto.mp3'
 
@@ -294,16 +294,14 @@ class RetoPS5App(App):
         
         # Primero detenemos la música de fondo y lanzamos el FX
         self.audio.stop_bg()
-        self.audio.play_fx('PUM(MP3_320K).mp3')
+        self.audio.play_fx('pum.mp3')
         
-        # IMPORTANTE: Ya no cargamos el archivo aquí, solo lo reproducimos
-        # El retraso de 0.8s da tiempo a que el 'PUM' termine su impacto inicial
+        # El retraso de 0.8s da tiempo a que el 'pum' termine su impacto inicial
         Clock.schedule_once(self.play_letania, 0.8)
 
     def play_letania(self, dt):
-        # Si por alguna razón no se cargó en la portada, se carga ahora (pero solo una vez)
         if not self.audio.music_13:
-            self.audio.load_13_music('Letanía13.mp3')
+            self.audio.load_13_music('letania13.mp3')
         
         if self.audio.music_13:
             self.audio.music_13.bind(on_stop=lambda instance: setattr(self.audio, 'is_playing_13', False))
@@ -340,4 +338,4 @@ class RetoPS5App(App):
 
 if __name__ == '__main__':
     RetoPS5App().run()
-      
+        
