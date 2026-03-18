@@ -1,4 +1,4 @@
-name: Compilador Reto PS5 Profesional
+name: Compilador Reto PS5 Final
 on:
   push:
     branches: [ main ]
@@ -7,8 +7,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Esta variable es obligatoria en 2026 para que GitHub no bloquee el proceso
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
@@ -24,10 +26,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar Dependencias del Sistema (Arreglo Error 100)
+      - name: Instalar Dependencias del Sistema
         run: |
-          sudo apt update --fix-missing
-          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
+          sudo apt-get update || true
+          sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
           build-essential libltdl-dev libgmp-dev libmpfr-dev libmpc-dev
 
@@ -38,13 +40,11 @@ jobs:
 
       - name: Compilar APK con Buildozer
         run: |
-          # Usamos python3 -m para asegurar que el binario sea localizado en el PATH
-          # 'yes' acepta las licencias de Android SDK automáticamente
+          # Usamos python3 -m para asegurar que encuentre el ejecutable
           yes | python3 -m buildozer android debug
 
-      - name: Subir el APK final
+      - name: Subir el APK resultante
         uses: actions/upload-artifact@v4
         with:
-          name: APK_Reto_PS5_Instalable
+          name: APK_Reto_PS5_Final
           path: bin/*.apk
-          
