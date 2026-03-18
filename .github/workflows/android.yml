@@ -1,4 +1,4 @@
-name: Compilador Reto PS5 Final
+name: Compilador Reto PS5
 on:
   push:
     branches: [ main ]
@@ -7,12 +7,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Esta variable es obligatoria en 2026 para que GitHub no bloquee el proceso
     env:
+      # Obliga a GitHub a usar el entorno nuevo y esquiva el error de Node.js 20
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
-      - name: Checkout del código
+      - name: Checkout del Repositorio
         uses: actions/checkout@v4
 
       - name: Configurar Java 17
@@ -26,25 +25,25 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar Dependencias del Sistema
+      - name: Instalar Herramientas de Linux (Arregla Error 100)
         run: |
           sudo apt-get update || true
           sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
           build-essential libltdl-dev libgmp-dev libmpfr-dev libmpc-dev
 
-      - name: Instalar Buildozer y Cython
+      - name: Instalar Buildozer
         run: |
           pip install --upgrade pip
-          pip install "buildozer>=1.5.0" "cython<3.0.0" virtualenv
+          pip install "buildozer>=1.5.0" cython virtualenv
 
       - name: Compilar APK con Buildozer
         run: |
-          # Usamos python3 -m para asegurar que encuentre el ejecutable
+          # python3 -m asegura que encuentre el comando y no salga "command not found"
           yes | python3 -m buildozer android debug
 
-      - name: Subir el APK resultante
+      - name: Subir APK Resultante
         uses: actions/upload-artifact@v4
         with:
-          name: APK_Reto_PS5_Final
+          name: App_Reto_PS5
           path: bin/*.apk
