@@ -1,4 +1,4 @@
-name: Compilador Reto PS5 Terminal
+name: Compilador Reto PS5 Definitivo
 on:
   push:
     branches: [ main ]
@@ -6,10 +6,10 @@ on:
 
 jobs:
   build:
-    # EL MILAGRO: Forzamos una versión estable de Ubuntu que no tiene librerías borradas
     runs-on: ubuntu-22.04
     env:
-      # Apagamos el error molesto de Node.js 20 permitiendo que GitHub lo use sin llorar
+      # Con esto silenciamos las alertas amarillas de Node.js para siempre
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout del Repositorio
@@ -26,21 +26,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Instalar Herramientas de Linux (Ahora sí las va a encontrar)
+      - name: Instalar Herramientas de Linux
         run: |
           sudo apt-get update
           sudo apt-get install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
           libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
           build-essential libltdl-dev libgmp-dev libmpfr-dev libmpc-dev
 
-      - name: Instalar Buildozer
+      - name: Instalar Buildozer y Cython Estable
         run: |
           pip install --upgrade pip
-          pip install "buildozer>=1.5.0" cython virtualenv
+          # Usamos Cython 0.29.33, es el más estable para Kivy y evita que muera al minuto 7
+          pip install "buildozer>=1.5.0" "cython==0.29.33" virtualenv
 
       - name: Compilar APK
         run: |
-          yes | python3 -m buildozer android debug
+          # SIN EL "yes |" QUE ROMPIÓ LA TUBERÍA. Solo compilación pura.
+          python3 -m buildozer android debug
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
