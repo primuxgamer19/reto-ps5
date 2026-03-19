@@ -6,7 +6,7 @@ source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,mp3,wav,json
 version = 1.0
 
-# Requerimientos exactos. Kivy reproduce audios por defecto en Android, no necesitamos basura extra.
+# Requerimientos puros.
 requirements = python3,kivy==2.3.0,pillow
 
 orientation = portrait
@@ -18,11 +18,11 @@ android.minapi = 21
 android.ndk = 25b
 android.archs = arm64-v8a
 
-# Evita que el proceso se quede congelado pidiendo permisos en la consola
+# Aceptamos licencias desde adentro para no usar el "yes" en Linux
 android.accept_sdk_license = True
 android.allow_backup = True
 
-# Archivos gráficos
+# Archivos gráficos verificados
 icon.filename = icon.png
 presplash.filename = portada_img.png
 
@@ -30,7 +30,7 @@ presplash.filename = portada_img.png
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.wakelock = True
 
-# Secciones técnicas (Déjalas aunque estén vacías, Buildozer las busca)
+# Secciones técnicas (Obligatorias para que Buildozer no se trabe)
 android.meta_data =
 android.library_references =
 android.services =
