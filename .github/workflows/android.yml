@@ -8,9 +8,8 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-      # Con esto silenciamos las alertas amarillas de Node.js para siempre
+      # CORRECCIÓN: Dejar solo esta variable. Poner ambas causaba el error lógico en GitHub Actions.
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
       - name: Checkout del Repositorio
         uses: actions/checkout@v4
@@ -36,14 +35,12 @@ jobs:
       - name: Instalar Buildozer y Cython Estable
         run: |
           pip install --upgrade pip
-          # ¡CORRECCIÓN!: Kivy 2.3.0 exige Cython 3+. 
-          # Usar 0.29.33 causa fallos silenciosos que explotan al empaquetar el APK.
-          pip install "buildozer>=1.5.0" "Cython>=3.0.0" virtualenv
+          # CORRECCIÓN CRÍTICA: Regresamos a Cython 0.29.33. Esto garantiza que 
+          # python-for-android pase el comando 'create' sin crashear.
+          pip install "buildozer>=1.5.0" "cython==0.29.33" virtualenv
 
       - name: Compilar APK
         run: |
-          # SIN EL "yes |" que rompía la tubería. 
-          # Añadido "-v" (verbose) para ver todo el progreso de Gradle sin que se trabe.
           buildozer -v android debug
 
       - name: Subir APK
