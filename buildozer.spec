@@ -30,10 +30,12 @@ presplash.filename = portada_img.png
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.wakelock = True
 
-# Secciones técnicas (Obligatorias para que Buildozer no se trabe)
-android.meta_data =
-android.library_references =
-android.services =
+# Secciones técnicas
+# ¡CORRECCIÓN!: Si se dejan con el "=" y vacías, rompen el AndroidManifest.xml. 
+# Es mejor comentarlas si no se usan para que Buildozer haga el trabajo limpio.
+# android.meta_data =
+# android.library_references =
+# android.services =
 
 [buildozer]
 log_level = 2
