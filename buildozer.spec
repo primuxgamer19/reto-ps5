@@ -1,82 +1,46 @@
 [app]
-
-# (str) Title of your application
 title = Reto PS5
-
-# (str) Package name
 package.name = retops5
-
-# (str) Package domain (needed for android/ios packaging)
 package.domain = org.carlos
-
-# (str) Source code where the main.py live
 source.dir = .
-
-# (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
-
-# (str) Application versioning
+source.include_exts = py,png,jpg,kv,atlas,mp3,wav,json
 version = 1.0
 
-# (list) Application requirements
-# NOTA: Si usas otras librerías de Python (como requests, sqlite3, etc.), añádelas aquí separadas por comas.
-requirements = python3,kivy==2.3.0
+# Requerimientos puros.
+requirements = python3,kivy==2.3.0,pillow
 
-# (str) Custom source folders for requirements
-# Sets custom source for any requirements with recipes
-# requirements.source.kivy = ../../kivy
-
-# (str) Presplash of the application
-presplash.filename = %(source.dir)s/portada_img.png
-
-# (str) Icon of the application
-icon.filename = %(source.dir)s/icon.png
-
-# (list) Supported orientations
-# Valid options are: landscape, portrait, portrait-reverse or landscape-reverse
 orientation = portrait
+fullscreen = 1
 
-# (list) Permissions
-android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
-
-# (int) Target Android API, should be as high as possible.
+# --- CONFIGURACIÓN DE ANDROID ---
 android.api = 34
-
-# (int) Minimum API your APK / AAB will support.
 android.minapi = 21
-
-# (str) Android NDK version to use
 android.ndk = 25b
-
-# (bool) If True, then skip trying to update the Android sdk
-# This can be useful to avoid network timeouts or cross-compilation errors
-android.skip_update = False
-
-# (bool) If True, then automatically accept SDK license
-# valid if android.skip_update is False
-android.accept_sdk_license = True
-
-# (str) Android entry point, default is ok for Kivy-based app
-android.entrypoint = org.kivy.android.PythonActivity
-
-# (str) Android app theme, default is ok for Kivy-based app
-android.apptheme = "@android:style/Theme.NoTitleBar"
-
-# (list) The Android archs to build for, choices: armeabi-v7a, arm64-v8a, x86, x86_64
-# For Google Play, you need both armeabi-v7a and arm64-v8a
 android.archs = arm64-v8a
 
-# (bool) enables Android auto backup feature (Android API >=23)
+# Aceptamos licencias desde adentro para no usar el "yes" en Linux
+android.accept_sdk_license = True
 android.allow_backup = True
 
-# (bool) Enables AndroidX support
-android.enable_androidx = True
+# Archivos gráficos verificados (CORRECCIÓN: Se añade %(source.dir)s/ para evitar errores de ruta)
+icon.filename = %(source.dir)s/icon.png
+presplash.filename = %(source.dir)s/portada_img.png
+
+# Permisos (CORRECCIÓN CRÍTICA: Quitamos los espacios en blanco entre las comas)
+android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
+android.wakelock = True
+
+# Secciones técnicas
+# ¡CORRECCIÓN!: Si se dejan con el "=" y vacías, rompen el AndroidManifest.xml. 
+# Es mejor comentarlas si no se usan para que Buildozer haga el trabajo limpio.
+# android.meta_data =
+# android.library_references =
+# android.services =
 
 [buildozer]
-
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
-# LO PONEMOS EN 2 PARA VER ERRORES DETALLADOS SI FALLA
 log_level = 2
-
-# (int) Display warning if buildozer is run as root (0 = False, 1 = True)
 warn_on_root = 1
+
+[bootstrap]
+[web]
+[p4a]
