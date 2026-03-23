@@ -86,7 +86,7 @@ class PortadaScreen(Screen):
     def ir_a_calculadora(self, dt):
         App.get_running_app().audio.play_bg('ps5.mp3')
         self.manager.current = 'calculadora'
-class CalculadoraScreen(Screen):
+        class CalculadoraScreen(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
         app = App.get_running_app()
@@ -117,8 +117,13 @@ class CalculadoraScreen(Screen):
         self.res_tiempo = Label(text="Tiempo: ---", color=(0, 0.8, 1, 1))
         self.res_falta = Label(text="Te falta: $---", color=(1, 0.5, 0, 1))
         self.res_cuota = Label(text="Cuota limite mensual: $---")
-        self.res_posible = Label(text="Libre tras arriendo: $---\n", color=(0.5, 1, 0.5, 1), halign="center") # LABEL CONCENTRADO EN 2 LINEAS
+        
+        # --- AQUÍ ESTÁ EL ARREGLO PARA QUE NO SE SALGA DEL BORDE ---
+        self.res_posible = Label(text="Libre tras arriendo: $---", color=(0.5, 1, 0.5, 1), halign="center")
+        self.res_posible.bind(size=lambda s, w: setattr(s, 'text_size', (w[0] - 20, None)))
+        
         self.res_estado = Label(text="Estado: Esperando datos...", italic=True, halign="center")
+        self.res_estado.bind(size=lambda s, w: setattr(s, 'text_size', (w[0] - 20, None))) # Agregado a estado también por si acaso
         
         for widget in [self.res_meta, self.res_tiempo, self.res_falta, self.res_cuota, self.res_posible, self.res_estado]:
             self.layout.add_widget(widget)
@@ -163,6 +168,7 @@ class CalculadoraScreen(Screen):
             self.res_falta.text = f"Te faltan: ${falta:.2f}"
             self.res_cuota.text = f"Cuota limite mensual: ${cuota:.2f}"
             
+            # --- AQUÍ ESTÁ EL ARREGLO DE LOS SALTOS DE LÍNEA ---
             if disponible_mes > 0 and falta > 0:
                 meses_rapidos = falta / disponible_mes
                 self.res_posible.text = f"Dinero libre al mes: ${disponible_mes:.2f}\n(Podrias ganar en {meses_rapidos:.1f} meses)"
@@ -184,6 +190,7 @@ class CalculadoraScreen(Screen):
         except ValueError:
             self.res_estado.text = "¡Pon un numero valido! xD"
             app.audio.play_fx('erro.mp3')
+
     def obtener_feedback(self, ahorrado, meta, dias, porcentaje, cuota):
         app = App.get_running_app()
         disponible_mes = app.salario - app.arriendo
@@ -255,7 +262,7 @@ class CalculadoraScreen(Screen):
             return f"¡CASI AHI! [{porcentaje:.1f}%] --->\nPero el tiempo respira en tu nuca D:", 'alerta.wav'
         
         return f"¡CASI AHI! [{porcentaje:.1f}%] --->\nYa huelo el plastico nuevo :D", 'acierto.mp3'
-class PresupuestoScreen(Screen):
+        class PresupuestoScreen(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.rows = []
@@ -397,9 +404,10 @@ class NotificacionesScreen(Screen):
         layout.add_widget(btn_back)
         
         layout.add_widget(Label(text="Nota: La app te avisará cada 24 horas\nsi sigues con el mismo monto.", italic=True))
-        self.add_widget(layout) # ESTO ESTABA MAL INDENTADO Y LO ARREGLAMOS B-
+        
+        self.add_widget(layout)
 
-            def on_enter(self):
+    def on_enter(self):
         app = App.get_running_app()
         self.hour_input.text = str(app.notif_hour)
 
@@ -415,8 +423,7 @@ class NotificacionesScreen(Screen):
                 app.audio.play_fx('erro.mp3')
         except:
             app.audio.play_fx('erro.mp3')
-
-class RetoPS5App(App):
+            class RetoPS5App(App):
     def build(self):
         Window.softinput_mode = "pan"
         Window.clearcolor = (0.1, 0.1, 0.1, 1)
@@ -516,4 +523,4 @@ class RetoPS5App(App):
 
 if __name__ == '__main__':
     RetoPS5App().run()
-        
+                
