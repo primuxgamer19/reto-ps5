@@ -82,11 +82,11 @@ class PortadaScreen(Screen):
         app = App.get_running_app()
         app.audio.load_13_music('letania13.mp3')
         Clock.schedule_once(self.ir_a_calculadora, 3)
-
     def ir_a_calculadora(self, dt):
         App.get_running_app().audio.play_bg('ps5.mp3')
         self.manager.current = 'calculadora'
-        class CalculadoraScreen(Screen):
+
+class CalculadoraScreen(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
         app = App.get_running_app()
