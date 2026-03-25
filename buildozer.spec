@@ -4,7 +4,7 @@ package.name = retops5
 package.domain = org.carlos
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,mp3,wav,json
-version = 1.0
+version = 2.0
 
 # Requerimientos puros.
 requirements = python3,kivy==2.3.0,pillow
