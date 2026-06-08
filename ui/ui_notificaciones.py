@@ -1,4 +1,4 @@
-# ui_notificaciones.py
+# ui/ui_notificaciones.py (versión mejorada con tipos visuales)
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -232,7 +232,7 @@ class _AnalogClockDial(Widget):
         return super().bind(**kwargs)
 
 
-# ---------- Main NotificacionesScreen (UI improved) ----------
+# ---------- Main NotificacionesScreen (UI MEJORADA) ----------
 class NotificacionesScreen(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -242,11 +242,11 @@ class NotificacionesScreen(Screen):
         self.main = BoxLayout(orientation='vertical', padding=[dp(12), dp(12), dp(12), dp(12)], spacing=dp(12))
 
         # Header
-        header = Label(text="--- CONFIGURAR NOTIFICACIONES ---", size_hint_y=None, height=dp(44), bold=True)
+        header = Label(text="--- CONFIGURAR NOTIFICACIONES ---", size_hint_y=None, height=dp(44), bold=True, color=(0, 1, 1, 1))
         self.main.add_widget(header)
 
-        # Configuration card (only enabled switch)
-        cfg_card = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(88),
+        # Configuration card (enabled switch)
+        cfg_card = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(110),
                              padding=[dp(10), dp(8), dp(10), dp(8)], spacing=dp(8))
         cfg_box = GridLayout(cols=2, spacing=dp(8), size_hint_y=None, height=dp(40))
         cfg_box.add_widget(Label(text="Notificaciones activas:", size_hint_x=None, width=dp(180)))
@@ -254,14 +254,26 @@ class NotificacionesScreen(Screen):
         cfg_box.add_widget(self.switch_enabled)
         cfg_card.add_widget(cfg_box)
 
-        help_lbl = Label(text="Activa para recibir recordatorios; crea varias entradas.", font_size='12sp',
-                         size_hint_y=None, height=dp(20), color=(0.8, 0.8, 0.8, 1))
+        # Help text mejorado
+        help_lbl = Label(
+            text="✓ Activa para recibir recordatorios\n✓ Elige POPUP para Pydroid o ANDROID para compilado",
+            font_size='11sp',
+            size_hint_y=None,
+            height=dp(40),
+            color=(0.8, 0.8, 0.8, 1)
+        )
         cfg_card.add_widget(help_lbl)
 
         self.main.add_widget(cfg_card)
 
         # Entries header
-        self.main.add_widget(Label(text="Entradas programadas (HH:MM - Mensaje):", size_hint_y=None, height=dp(28)))
+        self.main.add_widget(Label(
+            text="Entradas programadas (HH:MM - Mensaje - Tipo):",
+            size_hint_y=None,
+            height=dp(28),
+            color=(0.7, 1, 0.7, 1),
+            bold=True
+        ))
 
         # Scrollable list of entries
         self.scroll = ScrollView(size_hint=(1, 1))
@@ -271,7 +283,7 @@ class NotificacionesScreen(Screen):
         self.scroll.add_widget(self.entries_box)
         self.main.add_widget(self.scroll)
 
-        # Controls area (flat, compact buttons)
+        # Controls area
         controls = BoxLayout(size_hint_y=None, height=dp(48), spacing=dp(8))
         btn_add = Button(text="AÑADIR ENTRADA", size_hint=(0.45, 1), background_normal='', background_color=(0.06, 0.5, 0.9, 1))
         btn_add.bind(on_press=self._open_add_entry)
@@ -284,9 +296,13 @@ class NotificacionesScreen(Screen):
         controls.add_widget(btn_back)
         self.main.add_widget(controls)
 
-        # Empty state label (hidden when entries exist)
-        self.empty_label = Label(text="No hay entradas programadas. Pulsa 'AÑADIR ENTRADA' para crear una.",
-                                 size_hint_y=None, height=dp(40), color=(0.7, 0.7, 0.7, 1))
+        # Empty state label
+        self.empty_label = Label(
+            text="No hay entradas programadas. Pulsa 'AÑADIR ENTRADA' para crear una.",
+            size_hint_y=None,
+            height=dp(40),
+            color=(0.7, 0.7, 0.7, 1)
+        )
         self.main.add_widget(self.empty_label)
 
         self.add_widget(self.main)
@@ -311,10 +327,29 @@ class NotificacionesScreen(Screen):
             self.empty_label.opacity = 0
 
         for e in entries:
-            row = BoxLayout(size_hint_y=None, height=dp(64), spacing=dp(8), padding=[dp(8), dp(6), dp(8), dp(6)])
-            lbl = Label(text=f"[b]{e.get('hora')}[/b]  -  {e.get('mensaje')}", markup=True,
-                        halign='left', valign='middle')
-            lbl.text_size = (Window.width * 0.62, None)
+            row = BoxLayout(size_hint_y=None, height=dp(70), spacing=dp(8), padding=[dp(8), dp(6), dp(8), dp(6)])
+            
+            # Color según tipo
+            tipo = e.get("tipo", "popup")
+            if tipo == "android":
+                color_tipo = (0.2, 0.8, 0.2, 1)  # Verde para Android
+                icon_tipo = "🤖"
+            else:
+                color_tipo = (0.95, 0.7, 0.2, 1)  # Naranja para Popup
+                icon_tipo = "💬"
+            
+            # Label con info
+            lbl_text = f"[b]{e.get('hora')}[/b]  -  {e.get('mensaje')}\n{icon_tipo} [{tipo.upper()}]"
+            lbl = Label(
+                text=lbl_text,
+                markup=True,
+                halign='left',
+                valign='middle',
+                color=color_tipo
+            )
+            lbl.text_size = (Window.width * 0.55, None)
+            
+            # Botones
             btns = BoxLayout(orientation='vertical', size_hint_x=None, width=dp(150), spacing=dp(6))
             btn_edit = Button(text="Editar", size_hint_y=None, height=dp(28), background_normal='', background_color=(0.95, 0.8, 0.2, 1))
             btn_remove = Button(text="Eliminar", size_hint_y=None, height=dp(28), background_normal='', background_color=(0.9, 0.2, 0.2, 1))
@@ -328,7 +363,7 @@ class NotificacionesScreen(Screen):
             row.add_widget(btns)
             self.entries_box.add_widget(row)
 
-    # ---------- Entry creation / edit with analog time picker ----------
+    # ---------- Entry creation / edit with type selector ----------
     def _open_add_entry(self, instance):
         self._open_entry_popup()
 
@@ -340,20 +375,58 @@ class NotificacionesScreen(Screen):
                 entry = e
                 break
         if entry:
-            self._open_entry_popup(initial_hora=entry.get("hora"), initial_msg=entry.get("mensaje"))
+            self._open_entry_popup(
+                initial_hora=entry.get("hora"),
+                initial_msg=entry.get("mensaje"),
+                initial_tipo=entry.get("tipo", "popup")
+            )
 
-    def _open_entry_popup(self, initial_hora="", initial_msg=""):
+    def _open_entry_popup(self, initial_hora="", initial_msg="", initial_tipo="popup"):
         content = BoxLayout(orientation='vertical', spacing=dp(10), padding=[dp(12), dp(12), dp(12), dp(12)])
 
-        # Hora display (button opens analog picker)
+        # Hora
         hora_box = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(44), spacing=dp(8))
         hora_label = Label(text="Hora (HH:MM):", size_hint_x=None, width=dp(120), valign='middle')
         hora_btn = Button(text=initial_hora or "Seleccionar hora", size_hint=(1, None), height=dp(44), background_normal='', background_color=(0.12,0.12,0.12,1))
         hora_box.add_widget(hora_label)
         hora_box.add_widget(hora_btn)
 
+        # Mensaje
         msg_input = TextInput(text=initial_msg, multiline=False, hint_text="Mensaje", size_hint_y=None, height=dp(80))
 
+        # TIPO DE NOTIFICACIÓN (NUEVO)
+        tipo_box = BoxLayout(orientation='horizontal', size_hint_y=None, height=dp(44), spacing=dp(8))
+        tipo_label = Label(text="Tipo:", size_hint_x=None, width=dp(120), valign='middle')
+        
+        # Botones de selección de tipo
+        tipo_buttons_box = BoxLayout(size_hint_x=None, width=dp(200), spacing=dp(4))
+        
+        btn_popup = Button(text="💬 POPUP", size_hint=(0.5, 1), background_normal='', 
+                          background_color=(0.95, 0.7, 0.2, 1) if initial_tipo == "popup" else (0.4, 0.4, 0.4, 1))
+        btn_android = Button(text="🤖 ANDROID", size_hint=(0.5, 1), background_normal='',
+                            background_color=(0.2, 0.8, 0.2, 1) if initial_tipo == "android" else (0.4, 0.4, 0.4, 1))
+        
+        selected_tipo = [initial_tipo]  # Mutable para capturar en closure
+        
+        def on_tipo_select(tipo_val):
+            selected_tipo[0] = tipo_val
+            # Actualizar colores
+            if tipo_val == "popup":
+                btn_popup.background_color = (0.95, 0.7, 0.2, 1)
+                btn_android.background_color = (0.4, 0.4, 0.4, 1)
+            else:
+                btn_popup.background_color = (0.4, 0.4, 0.4, 1)
+                btn_android.background_color = (0.2, 0.8, 0.2, 1)
+        
+        btn_popup.bind(on_press=lambda *args: on_tipo_select("popup"))
+        btn_android.bind(on_press=lambda *args: on_tipo_select("android"))
+        
+        tipo_buttons_box.add_widget(btn_popup)
+        tipo_buttons_box.add_widget(btn_android)
+        tipo_box.add_widget(tipo_label)
+        tipo_box.add_widget(tipo_buttons_box)
+
+        # Botones OK/Cancel
         btn_box = BoxLayout(size_hint_y=None, height=dp(44), spacing=dp(10))
         btn_ok = Button(text="OK", background_normal='', background_color=(0.2, 0.7, 0.3, 1))
         btn_cancel = Button(text="CANCELAR", background_normal='', background_color=(0.8, 0.2, 0.2, 1))
@@ -363,17 +436,17 @@ class NotificacionesScreen(Screen):
         content.add_widget(hora_box)
         content.add_widget(Label(text="Mensaje:", size_hint_y=None, height=dp(20)))
         content.add_widget(msg_input)
+        content.add_widget(tipo_box)
         content.add_widget(btn_box)
 
-        popup = Popup(title="Añadir / Editar entrada", content=content, size_hint=(0.9, 0.6), auto_dismiss=False)
+        popup = Popup(title="Añadir / Editar entrada", content=content, size_hint=(0.95, 0.75), auto_dismiss=False)
 
         def _on_ok(inst):
             hora = (hora_btn.text or "").strip()
             msg = (msg_input.text or "").strip()
             if not hora or hora == "Seleccionar hora":
-                # feedback: simple visual shake could be added; keep minimal
                 return
-            ok = App.get_running_app().datos.add_entry(hora, msg)
+            ok = App.get_running_app().datos.add_entry(hora, msg, selected_tipo[0])
             if ok:
                 App.get_running_app().datos.save_data()
                 self._refresh_entries()
@@ -420,11 +493,6 @@ class NotificacionesScreen(Screen):
         btn_yes.bind(on_press=_do_delete)
         btn_no.bind(on_press=_cancel)
         popup.open()
-
-    def _remove_entry(self, hora):
-        App.get_running_app().datos.remove_entry(hora)
-        App.get_running_app().datos.save_data()
-        self._refresh_entries()
 
     # ---------- Save and navigation ----------
     def _save_and_back(self, instance):
