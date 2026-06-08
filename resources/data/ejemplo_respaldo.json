@@ -1,0 +1,12 @@
+{
+  "presupuesto": {
+    "salario": 1000,
+    "gasto_hoy": 0
+  },
+  "ingresos": [],
+  "gastos": [],
+  "notificaciones": {
+    "enabled": false,
+    "entries": []
+  }
+}
