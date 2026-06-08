@@ -1,4 +1,4 @@
-# main.py
+# main.py (versión mejorada)
 from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager
 from kivy.core.window import Window
@@ -12,6 +12,7 @@ import datetime
 
 from audio.audio import AudioManager
 from logic.motor_datos import MotorDatos
+from logic.notificaciones_debug import notif_debug
 
 from ui.ui_calculadora import CalculadoraScreen
 from ui.ui_presupuesto import PresupuestoScreen
@@ -43,7 +44,11 @@ class RetoPS5App(App):
                 def play_fx(self, *a, **k): pass
             self.audio = _AudioFallback()
 
-        self.datos = MotorDatos() 
+        self.datos = MotorDatos()
+        
+        # Log inicial
+        notif_debug.log_info("App iniciada")
+        notif_debug.log_info(f"Compilada en Android: {self._is_compiled_android()}")
         
         sm = ScreenManager()
         sm.add_widget(CalculadoraScreen(name='calculadora'))
@@ -65,10 +70,12 @@ class RetoPS5App(App):
         return True
 
     def on_resume(self):
+        notif_debug.log_info("App reanudada (on_resume)")
         self.check_daily_events()
         return True
 
     def on_start(self):
+        notif_debug.log_info("App iniciada (on_start)")
         self.check_daily_events()
         try:
             if not getattr(self.audio, 'music_13', None):
@@ -82,9 +89,11 @@ class RetoPS5App(App):
             self.show_notif_popup()
 
     def show_notif_popup(self, title='¡ATENCIÓN CARLOS!', message=None):
+        """Muestra un popup de notificación (solo mientras app está abierta)"""
         monto = getattr(self.datos, 'ahorrado_guardado', "0")
         if message is None:
             message = f"¿Ya vas a actualizar tu ahorro?\nO te vas a quedar en ${monto} para siempre..."
+        
         content = BoxLayout(orientation='vertical', padding=10)
         content.add_widget(Label(text=message, halign="center"))
         btn = Button(text="Ya voy, no me presiones", size_hint_y=None, height=50)
@@ -92,6 +101,7 @@ class RetoPS5App(App):
         btn.bind(on_press=popup.dismiss)
         content.add_widget(btn)
         popup.open()
+        
         try:
             self.audio.play_fx('alerta.wav')
         except:
@@ -126,13 +136,18 @@ class RetoPS5App(App):
         self.audio.is_playing_13 = False
 
     def _is_compiled_android(self):
+        """Detecta si la app está compilada para Android o se ejecuta en Pydroid/desarrollo"""
         return 'ANDROID_ARGUMENT' in os.environ or 'ANDROID_PRIVATE' in os.environ
 
     def _check_scheduled_notifications(self, dt):
         """
-        Comprueba las entradas programadas con tolerancia temporal.
-        - Ventana de tolerancia: 1 minuto antes y 1 minuto después.
-        - Actualiza last_sent cuando se envía.
+        Comprueba las entradas programadas cada 30 segundos.
+        
+        Lógica:
+        - Si es Android compilado: usa notificaciones nativas (plyer)
+        - Si es Pydroid/desarrollo: usa popups dentro de la app
+        - Tolerance window: 60 segundos antes/después de la hora
+        - Solo envía una notificación por día
         """
         try:
             cfg = self.datos.get_config()
@@ -140,41 +155,58 @@ class RetoPS5App(App):
                 return
 
             ahora_dt = datetime.datetime.now()
-            ahora_hm = ahora_dt.strftime("%H:%M")
             hoy_str = ahora_dt.strftime("%Y-%m-%d")
+            
+            # Si ya se envió una notificación hoy, no enviar más
+            if cfg.get("last_sent") == hoy_str:
+                return
 
-            for e in self.datos.get_entries():
-                hora = e.get("hora")
-                if not hora:
-                    continue
+            # Obtener la próxima notificación a enviar
+            proxima_entry, delta = self.datos.get_next_notification_entry(ahora_dt)
+            
+            if proxima_entry is None:
+                return
+            
+            # Determinar tipo de notificación según la configuración de la entrada
+            tipo_notif = proxima_entry.get("tipo", "popup")
+            titulo = "Recordatorio"
+            mensaje = proxima_entry.get("mensaje") or "Tienes un recordatorio programado."
+            
+            # Loguear el evento
+            notif_debug.log_info(f"Enviando notificación [{tipo_notif}]", {
+                "hora": proxima_entry.get("hora"),
+                "mensaje": mensaje,
+                "delta_segundos": delta,
+                "ambiente": "Android compilado" if self._is_compiled_android() else "Pydroid/Desarrollo"
+            })
+            
+            # NOTIFICACIÓN TIPO ANDROID (nativa)
+            if tipo_notif == "android" and self._is_compiled_android() and plyer_notification is not None:
                 try:
-                    hh, mm = map(int, hora.split(":"))
-                except:
-                    continue
-                target_dt = ahora_dt.replace(hour=hh, minute=mm, second=0, microsecond=0)
-                delta = abs((ahora_dt - target_dt).total_seconds())
-                # tolerancia 60 segundos
-                if delta <= 60:
-                    titulo = "Recordatorio"
-                    mensaje = e.get("mensaje") or "Tienes un recordatorio programado."
-                    if self._is_compiled_android() and plyer_notification is not None:
-                        try:
-                            plyer_notification.notify(title=titulo, message=mensaje)
-                        except Exception:
-                            self.show_notif_popup(title=titulo, message=mensaje)
-                    else:
-                        self.show_notif_popup(title=titulo, message=mensaje)
-                    # actualizar last_sent
-                    self.datos.set_last_sent_date(hoy_str)
-                    self.datos.save_data()
-                    break
-        except Exception:
-            # No queremos que el scheduler rompa la app
-            pass
+                    plyer_notification.notify(title=titulo, message=mensaje)
+                    notif_debug.log_info("✓ Notificación Android enviada correctamente")
+                except Exception as e:
+                    notif_debug.log_error(f"Error enviando notificación Android: {str(e)}")
+                    # Fallback a popup
+                    self.show_notif_popup(title=titulo, message=mensaje)
+            
+            # NOTIFICACIÓN TIPO POPUP (solo app abierta)
+            else:
+                self.show_notif_popup(title=titulo, message=mensaje)
+                notif_debug.log_info("✓ Notificación POPUP enviada")
+            
+            # Actualizar last_sent
+            self.datos.set_last_sent_date(hoy_str)
+            self.datos.save_data()
+            notif_debug.log_info(f"✓ last_sent actualizado a {hoy_str}")
+            
+        except Exception as e:
+            notif_debug.log_error(f"Error en _check_scheduled_notifications: {str(e)}")
 
     def on_stop(self):
         try:
             self.datos.save_data()
+            notif_debug.log_info("App cerrada - datos guardados")
         except:
             pass
 
