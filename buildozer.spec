@@ -3,10 +3,14 @@ title = Reto PS5
 package.name = retops5
 package.domain = org.carlos
 source.dir = .
+# Incluir todas las extensiones necesarias y las nuevas carpetas
 source.include_exts = py,png,jpg,kv,atlas,mp3,wav,json
+# Incluir explícitamente todas las carpetas del proyecto
+source.include_patterns = ui/*,logic/*,mat/*,debug/*,resources/*,.github/*
+
 version = 2.0
 
-# Requerimientos puros.
+# Requerimientos puros
 requirements = python3,kivy==2.3.0,pillow
 
 orientation = portrait
@@ -22,20 +26,16 @@ android.archs = arm64-v8a
 android.accept_sdk_license = True
 android.allow_backup = True
 
-# Archivos gráficos verificados (CORRECCIÓN: Se añade %(source.dir)s/ para evitar errores de ruta)
+# Archivos gráficos verificados
 icon.filename = %(source.dir)s/icon.png
 presplash.filename = %(source.dir)s/portada_img.png
 
-# Permisos (CORRECCIÓN CRÍTICA: Quitamos los espacios en blanco entre las comas)
+# Permisos necesarios
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 android.wakelock = True
 
-# Secciones técnicas
-# ¡CORRECCIÓN!: Si se dejan con el "=" y vacías, rompen el AndroidManifest.xml. 
-# Es mejor comentarlas si no se usan para que Buildozer haga el trabajo limpio.
-# android.meta_data =
-# android.library_references =
-# android.services =
+# Configuración de metadatos
+android.meta_data = com.google.android.gms.version=@integer/google_play_services_version
 
 [buildozer]
 log_level = 2
